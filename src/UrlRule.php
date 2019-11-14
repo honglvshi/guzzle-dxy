@@ -3,38 +3,95 @@
 namespace GuzzleDxy;
 class UrlRule
 {
+    //对应的url 全路径
     protected $uri = '';
 
+    //是否需要熔断
+    protected $isNeedLock = false;
+
+    //超时限制 超过该值代表 错误请求
     protected $timeoutLimit = 10;
 
+    //规定时间内超时的次数
+    protected $timeoutErrorLimit = 2;
+
+    //规定时间那超过超时的次数
+    protected $timeoutInterval = 60;
+
+    //规定时间的错误次数限制
     protected $errorLimit = 2;
 
+    //错误时间间隔 60s
     protected $errorInterval = 60;
 
+    //锁住接口时间
     protected $lockTime = 60;
 
-    protected $responseMock = [];
+    // 响应返回错误吗白名单列表 如果response > 300 但是在白名单那 认为接口没有出错
+    protected $whiteResponseCodeList = [
+
+    ];
 
     /**
-     * @return string
+     * @return int
      */
-    public function getUri()
+    public function getTimeoutErrorLimit(): int
     {
-        return $this->uri;
-    }
-
-    /**
-     * @param string $uri
-     */
-    public function setUri($uri)
-    {
-        $this->uri = $uri;
+        return $this->timeoutErrorLimit;
     }
 
     /**
      * @return int
      */
-    public function getTimeoutLimit()
+    public function getTimeoutInterval(): int
+    {
+        return $this->timeoutInterval;
+    }
+
+    /**
+     * @return array
+     */
+    public function getWhiteResponseCodeList(): array
+    {
+        return $this->whiteResponseCodeList;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUri(): string
+    {
+        return $this->uri;
+    }
+
+    /**j
+     * @param string $uri
+     */
+    public function setUri(string $uri): void
+    {
+        $this->uri = $uri;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isNeedLock(): bool
+    {
+        return $this->isNeedLock;
+    }
+
+    /**
+     * @param bool $isNeedLock
+     */
+    public function setIsNeedLock(bool $isNeedLock): void
+    {
+        $this->isNeedLock = $isNeedLock;
+    }
+
+    /**
+     * @return int
+     */
+    public function getTimeoutLimit(): int
     {
         return $this->timeoutLimit;
     }
@@ -42,7 +99,7 @@ class UrlRule
     /**
      * @param int $timeoutLimit
      */
-    public function setTimeoutLimit($timeoutLimit)
+    public function setTimeoutLimit(int $timeoutLimit): void
     {
         $this->timeoutLimit = $timeoutLimit;
     }
@@ -50,7 +107,7 @@ class UrlRule
     /**
      * @return int
      */
-    public function getErrorLimit()
+    public function getErrorLimit(): int
     {
         return $this->errorLimit;
     }
@@ -58,7 +115,7 @@ class UrlRule
     /**
      * @param int $errorLimit
      */
-    public function setErrorLimit($errorLimit)
+    public function setErrorLimit(int $errorLimit): void
     {
         $this->errorLimit = $errorLimit;
     }
@@ -66,7 +123,7 @@ class UrlRule
     /**
      * @return int
      */
-    public function getErrorInterval()
+    public function getErrorInterval(): int
     {
         return $this->errorInterval;
     }
@@ -74,7 +131,7 @@ class UrlRule
     /**
      * @param int $errorInterval
      */
-    public function setErrorInterval($errorInterval)
+    public function setErrorInterval(int $errorInterval): void
     {
         $this->errorInterval = $errorInterval;
     }
@@ -82,7 +139,7 @@ class UrlRule
     /**
      * @return int
      */
-    public function getLockTime()
+    public function getLockTime(): int
     {
         return $this->lockTime;
     }
@@ -90,24 +147,10 @@ class UrlRule
     /**
      * @param int $lockTime
      */
-    public function setLockTime($lockTime)
+    public function setLockTime(int $lockTime): void
     {
         $this->lockTime = $lockTime;
     }
 
-    /**
-     * @return array
-     */
-    public function getResponseMock()
-    {
-        return $this->responseMock;
-    }
 
-    /**
-     * @param array $responseMock
-     */
-    public function setResponseMock($responseMock)
-    {
-        $this->responseMock = $responseMock;
-    }
 }

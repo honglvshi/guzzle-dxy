@@ -2,10 +2,12 @@
 
 namespace GuzzleDxy;
 
-use GuzzleDxy\Listener\AfterHttpRequest;
-use GuzzleDxy\Listener\HttpRequestException;
+use GuzzleDxy\Events\HttpExceptionEvent;
+use GuzzleDxy\Events\HttpLockEvent;
+use GuzzleDxy\Events\HttpResponseEvent;
+use GuzzleDxy\Exceptions\HttpException;
+use GuzzleDxy\Exceptions\LockException;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\HandlerStack;
@@ -23,7 +25,6 @@ class Http
 
     public function __construct(array $config = [])
     {
-        $config['timeout'] = 5;
         $stack = new HandlerStack();
         $stack->setHandler(new CurlHandler());
 
@@ -38,12 +39,8 @@ class Http
         $stack->push(Middleware::mapResponse(function (ResponseInterface $response) {
             $this->result->setResponse($response);
             $this->result->setEndTime(microtime(true));
-
-            //写入日志
-            if (Container::$isRegisterLog) {
-                Container::getLogHandler()->info($this->result);
-            }
-
+            Events::dispatch(new HttpResponseEvent($this->result));
+            $this->response = $response;
             return $response;
         }));
 
@@ -53,77 +50,53 @@ class Http
 
     public function get(string $url, array $header = [])
     {
-        return $this->server(
-            $url,
-            "GET",
-            $header
-        );
+        return $this->server($url, "GET", $header);
     }
 
     public function post(string $url, array $header = [])
     {
-        return $this->server(
-            $url,
-            "POST",
-            $header
-        );
+        return $this->server($url, "POST", $header);
     }
 
     public function put(string $url, array $header = [])
     {
-        return $this->server(
-            $url,
-            "PUT",
-            $header
-        );
+        return $this->server($url, "PUT", $header);
     }
 
+
+    /**
+     * @param string $url
+     * @param string $method
+     * @param array $header
+     * @return string
+     * @throws LockException
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function server(string $url, string $method, array $header = [])
     {
-        //判断url能发送
-        $manage = new HttpManager();
-
-        $isRequest = $manage->isRequest($url);
-
-        if (!$isRequest) {
-            //@todo 抛异常 还是 返回mock数据 需要商量
-            return $manage->returnMockResponse($url);
+        if (Container::isRegisterUrl($url) && (new UrlManage(Container::getUrlRule($url)))->isLock()) {
+            Events::dispatch(new HttpLockEvent());
+            throw new LockException($url);
         }
-
-        $startTime = microtime(true);
 
         try {
-            $response = $this->client->request(
-                $method,
-                $url,
-                $header
-            );
-
-            $excuteTime = round(microtime(true) - $startTime, 2);
-
-            AfterHttpRequest::handler(
-                $url,
-                $response,
-                $excuteTime
-            );
-
+            $response = $this->client->request($method, $url, $header);
         } catch (RequestException $requestException) {
-            HttpRequestException::handler($requestException);
-            return $manage->returnMockResponse($url);
-
-        } catch (GuzzleException $guzzleException) {
-            //@todo guzzle的异常是否需要捕获 直接异常让sentry接管（洪吕石）
-            \GuzzleDxy\Listener\GuzzleException::handler($guzzleException);
-            return $manage->returnMockResponse($url);
+            Events::dispatch(new HttpExceptionEvent($requestException));
+            throw $requestException;
         }
 
-        //@todo 如果第三方出错了 是否需要屏蔽错误
-        if ($response->getStatusCode() >= 400) {
-            return $manage->returnMockResponse($url);
-        }
-
-        $this->response = $response;
         return (string)$response->getBody();
     }
+
+    /**
+     * 获取上一次请求的response
+     * @return ResponseInterface
+     */
+    public function getPreviousResponse(): ResponseInterface
+    {
+        return $this->response;
+    }
+
 
 }

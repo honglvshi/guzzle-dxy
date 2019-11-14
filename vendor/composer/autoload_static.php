@@ -14,6 +14,11 @@ class ComposerStaticInit1116c3af4aca1e4012034d22edf32f0d
     );
 
     public static $prefixLengthsPsr4 = array (
+        'S' => 
+        array (
+            'Symfony\\Contracts\\EventDispatcher\\' => 34,
+            'Symfony\\Component\\EventDispatcher\\' => 34,
+        ),
         'P' => 
         array (
             'Psr\\Http\\Message\\' => 17,
@@ -28,6 +33,14 @@ class ComposerStaticInit1116c3af4aca1e4012034d22edf32f0d
     );
 
     public static $prefixDirsPsr4 = array (
+        'Symfony\\Contracts\\EventDispatcher\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/event-dispatcher-contracts',
+        ),
+        'Symfony\\Component\\EventDispatcher\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/event-dispatcher',
+        ),
         'Psr\\Http\\Message\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/http-message/src',

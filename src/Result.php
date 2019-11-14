@@ -3,13 +3,13 @@ namespace GuzzleDxy;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use function GuzzleHttp\Psr7\str;
 
 class Result
 {
     private $response;
 
     private $request;
-
 
     private $startTime;
 
@@ -77,6 +77,15 @@ class Result
     public function setRequest(RequestInterface $request): void
     {
         $this->request = $request;
+    }
+
+    public function __toString()
+    {
+        return json_encode([
+            (string)$this->getRequest()->getBody(),
+            (string)$this->getResponse()->getBody(),
+            ($this->getEndTime() - $this->getStartTime())
+        ], JSON_UNESCAPED_UNICODE);
     }
 
 }

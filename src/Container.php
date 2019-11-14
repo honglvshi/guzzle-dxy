@@ -1,84 +1,95 @@
 <?php
 
+/**
+ * 容器类
+ */
+
 namespace GuzzleDxy;
 
-
+use GuzzleDxy\Contracts\CacheInterface;
 use GuzzleDxy\Contracts\LoggerInterface;
 use GuzzleDxy\Contracts\MonitInterface;
+use GuzzleDxy\Events\HttpLockEvent;
+use GuzzleDxy\Exceptions\LockException;
+use GuzzleDxy\Listeners\HttpSubscriber;
+use GuzzleDxy\Tools\UrlTools;
+use Symfony\Contracts\EventDispatcher\Event;
 
 class Container
 {
 
-    private static $ruleArray = [];
+    public static $isSetLogger = false;
 
-    private static $logHandler =  null;
-    private static $noticeHandler = null;
-    public static $isRegisterNotice = false;
-    public static $isRegisterLog = false;
-    private static $redisHandler;
+    public static $isSetCache = false;
 
-    private static $projectName = 'php-';
+    public static $isSetMonit = false;
 
+    private static $monint;
 
-    public static function getLogHandler() : LoggerInterface
+    private static $logger;
+
+    private static $cache;
+
+    private static $ruleContainer = [];
+
+    public static function enableEvent()
     {
-        return self::$logHandler;
+        //初始化dispatcher
+        Events::initDispatcher();
+        //增加订阅者
+        Events::addSubscriber(new HttpSubscriber());
+
+        Events::removeListener(HttpLockEvent::class, "httpLock");
     }
 
-    public static function setLogHandler(LoggerInterface $logger)
+    public static function getLogger() : LoggerInterface
     {
-        self::$logHandler = $logger;
-        self::$isRegisterLog = true;
+        return self::$logger;
     }
 
-    public static function setNoticeHandler(MonitInterface $monit)
+    public static function setLogger(LoggerInterface $logger)
     {
-        self::$noticeHandler = $monit;
-        self::$isRegisterNotice = true;
+        self::$logger = $logger;
+
+        self::$isSetLogger = true;
     }
 
-    public static function getNoticeHandler() : MonitInterface
+    public static function setCache(CacheInterface $cache)
     {
-        return self::$noticeHandler;
+        self::$cache = $cache;
+
+        self::$isSetCache = true;
     }
 
-    public static function setProjectName(string $projectName)
+    public static function getCache() : CacheInterface
     {
-        self::$projectName = $projectName;
+        return self::$cache;
     }
 
-    public static function getProjectName()
+    public static function setMoint(MonitInterface $monit)
     {
-        return self::$projectName;
+        self::$monint = $monit;
+
+        self::$isSetMonit = true;
     }
 
-    public static function setRedisHandler(\Redis $redis)
+    public static function getMonit() : MonitInterface
     {
-        self::$redisHandler = new HttpCache($redis);
+        return self::$monint;
     }
 
-    public static function getRedisHandler(): HttpCache
+    public static function registerUrl(UrlRule $urlRule)
     {
-        if (empty(self::$redisHandler)) {
-            return null;
-        }
-
-        return self::$redisHandler;
+        self::$ruleContainer[$urlRule->getUri()] = $urlRule;
     }
 
-    public static function register(UrlRule $class): void
+    public static function isRegisterUrl(string $url): bool
     {
-        self::$ruleArray[$class->getUri()] = $class;
+        return array_key_exists(UrlTools::getUrlPath($url), self::$ruleContainer);
     }
 
-    public static function hasRuleByUrl(string $url): bool
+    public static function getUrlRule(string $url) : UrlRule
     {
-        return array_key_exists($url, self::$ruleArray);
+        return self::isRegisterUrl($url) ? self::$ruleContainer[UrlTools::getUrlPath($url)] : null;
     }
-
-    public static function getRuleByUrl(string $url): UrlRule
-    {
-        return self::$ruleArray[$url];
-    }
-
 }
